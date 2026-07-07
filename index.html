@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>📋 提醒事项</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Noto Sans CJK SC", sans-serif;
+    background: #f5f5f7;
+    color: #1d1d1f;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+  }
+  .container { max-width: 640px; width: 100%; }
+
+  .header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 0; margin-bottom: 8px;
+  }
+  .header h1 { font-size: 28px; font-weight: 700; }
+  .header-actions { display: flex; gap: 10px; }
+  .header-actions button {
+    background: #007aff; color: #fff; border: none; border-radius: 20px;
+    padding: 8px 18px; font-size: 14px; font-weight: 500; cursor: pointer;
+  }
+  .header-actions button.secondary { background: #e5e5ea; color: #1d1d1f; }
+  .header-actions button:hover { opacity: 0.85; }
+
+  .date-bar {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;
+  }
+  .date-bar input[type="date"] {
+    border: 1px solid #d1d1d6; border-radius: 10px; padding: 8px 12px; font-size: 15px;
+    background: #fff; font-family: inherit; outline: none; flex: 1; min-width: 150px;
+  }
+  .date-bar input:focus { border-color: #007aff; }
+  .date-bar .quick-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+  .date-bar .quick-btn {
+    background: #e5e5ea; border: none; border-radius: 16px; padding: 5px 12px;
+    font-size: 13px; cursor: pointer; color: #1d1d1f; white-space: nowrap;
+  }
+  .date-bar .quick-btn.active { background: #007aff; color: #fff; }
+
+  .stats { font-size: 14px; color: #8e8e93; margin-bottom: 14px; }
+
+  .token-bar {
+    text-align: center; padding: 14px; margin-bottom: 12px;
+    background: #fff; border-radius: 12px; font-size: 14px;
+    display: none;
+  }
+  .token-bar.show { display: block; }
+  .token-bar button {
+    background: #007aff; color: #fff; border: none; border-radius: 16px;
+    padding: 6px 16px; font-size: 13px; cursor: pointer; margin-left: 8px;
+  }
+  .token-bar .hint { color: #8e8e93; font-size: 13px; margin-top: 6px; }
+
+  .item-list { list-style: none; }
+  .item-card {
+    background: #fff; border-radius: 12px; padding: 14px 16px; margin-bottom: 8px;
+    display: flex; align-items: center; gap: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04); cursor: pointer; user-select: none;
+  }
+  .item-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+  .item-card.done { opacity: 0.55; }
+  .item-card.done .item-content { text-decoration: line-through; color: #8e8e93; }
+
+  .checkbox {
+    width: 22px; height: 22px; border: 2px solid #c7c7cc; border-radius: 50%;
+    flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+    font-size: 12px;
+  }
+  .item-card.done .checkbox { background: #007aff; border-color: #007aff; color: #fff; }
+
+  .item-body { flex: 1; min-width: 0; }
+  .item-content { font-size: 16px; line-height: 1.4; word-break: break-word; }
+  .item-meta { display: flex; gap: 8px; margin-top: 4px; flex-wrap: wrap; }
+  .item-meta span {
+    font-size: 12px; padding: 1px 8px; border-radius: 10px; background: #f2f2f7; color: #8e8e93;
+  }
+  .item-meta .tag-recur { background: #e8f0fe; color: #1967d2; }
+  .item-meta .tag-overdue { background: #fce8e6; color: #d93025; }
+  .item-meta .tag-today { background: #e6f4ea; color: #137333; }
+
+  .item-delete {
+    background: none; border: none; color: #c7c7cc; font-size: 18px;
+    cursor: pointer; padding: 4px; flex-shrink: 0;
+  }
+  .item-delete:hover { color: #ff3b30; }
+
+  .empty { text-align: center; padding: 60px 20px; color: #8e8e93; }
+  .empty .icon { font-size: 48px; margin-bottom: 12px; }
+
+  .add-form {
+    background: #fff; border-radius: 12px; padding: 16px; margin-bottom: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04); display: none;
+  }
+  .add-form.open { display: block; }
+  .add-form input, .add-form select {
+    width: 100%; border: 1px solid #d1d1d6; border-radius: 10px;
+    padding: 10px 12px; font-size: 15px; font-family: inherit; outline: none; margin-bottom: 10px;
+  }
+  .add-form input:focus, .add-form select:focus { border-color: #007aff; }
+  .add-form .form-row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .add-form .form-row > * { flex: 1; min-width: 100px; }
+  .add-form .form-actions { display: flex; gap: 10px; justify-content: flex-end; }
+  .add-form .form-actions button { border: none; border-radius: 20px; padding: 8px 20px; font-size: 14px; font-weight: 500; cursor: pointer; }
+  .add-form .form-actions .btn-cancel { background: #e5e5ea; color: #1d1d1f; }
+  .add-form .form-actions .btn-submit { background: #007aff; color: #fff; }
+
+  .toast {
+    position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+    background: #323232; color: #fff; padding: 10px 20px; border-radius: 20px;
+    font-size: 14px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 100;
+  }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>📋 提醒</h1>
+    <div class="header-actions">
+      <button class="secondary" onclick="toggleAddForm()">＋ 添加</button>
+      <button onclick="refreshData()">⟳ 刷新</button>
+    </div>
+  </div>
+
+  <div class="token-bar" id="tokenBar">
+    <div>🔑 需要 GitHub Token 才能同步数据</div>
+    <button onclick="setToken()">配置 Token</button>
+    <div class="hint">Token 存在你浏览器本地，不会上传</div>
+  </div>
+
+  <div class="date-bar">
+    <input type="date" id="datePicker" onchange="onDateChange()">
+    <div class="quick-btns">
+      <button class="quick-btn" data-date="today" onclick="setDate('today')">今天</button>
+      <button class="quick-btn" data-date="tomorrow" onclick="setDate('tomorrow')">明天</button>
+      <button class="quick-btn" data-date="all" onclick="setDate('all')">全部</button>
+    </div>
+  </div>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="add-form" id="addForm">
+    <input type="text" id="newContent" placeholder="事项内容" autocomplete="off">
+    <div class="form-row">
+      <input type="date" id="newDate">
+      <select id="newRecur">
+        <option value="">不重复</option>
+        <option value="daily">每天</option>
+        <option value="weekday">工作日</option>
+        <option value="weekly">每周</option>
+      </select>
+    </div>
+    <div class="form-actions">
+      <button class="btn-cancel" onclick="toggleAddForm()">取消</button>
+      <button class="btn-submit" onclick="addItem()">添加</button>
+    </div>
+  </div>
+
+  <ul class="item-list" id="itemList"></ul>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ====== 配置 ======
+const OWNER = 'caluo123';
+const REPO = 'reminders';
+const FILE_PATH = 'reminders.json';
+const BRANCH = 'main';
+const GITHUB_API = 'https://api.github.com';
+
+// ====== Token 管理（存在 localStorage） ======
+function getToken() {
+  return localStorage.getItem('gh_token');
+}
+
+function setToken() {
+  const t = prompt('请输入 GitHub Personal Access Token：\n（需要 repo 权限，存在你浏览器本地）');
+  if (t && t.trim()) {
+    localStorage.setItem('gh_token', t.trim());
+    document.getElementById('tokenBar').classList.remove('show');
+    showToast('✅ Token 已保存，正在加载数据…');
+    init();
+  }
+}
+
+function clearToken() {
+  if (confirm('确定清除已保存的 Token？')) {
+    localStorage.removeItem('gh_token');
+    location.reload();
+  }
+}
+
+// ====== 数据 ======
+let data = { version: 1, items: [] };
+let items = [];
+let currentFilter = 'today';
+
+function todayStr() { return new Date().toISOString().slice(0, 10); }
+function tomorrowStr() { const d = new Date(); d.setDate(d.getDate()+1); return d.toISOString().slice(0,10); }
+function weekdayCn(i) { return ['周日','周一','周二','周三','周四','周五','周六'][i]; }
+function fmtDate(s) { return s ? `${s} ${weekdayCn(new Date(s+'T00:00:00').getDay())}` : ''; }
+
+// ====== GitHub API ======
+async function githubFetch(method, path, body) {
+  const token = getToken();
+  if (!token) throw new Error('NO_TOKEN');
+  const opts = {
+    method,
+    headers: {
+      'Authorization': `token ${token}`,
+      'Accept': 'application/vnd.github.v3+json',
+    }
+  };
+  if (body) {
+    opts.headers['Content-Type'] = 'application/json';
+    opts.body = JSON.stringify(body);
+  }
+  const resp = await fetch(GITHUB_API + path, opts);
+  const json = await resp.json();
+  if (!resp.ok) {
+    if (resp.status === 401 || resp.status === 403) {
+      localStorage.removeItem('gh_token');
+    }
+    throw new Error(json.message || `HTTP ${resp.status}`);
+  }
+  return json;
+}
+
+async function loadFromGitHub() {
+  try {
+    const result = await githubFetch('GET', `/repos/${OWNER}/${REPO}/contents/${FILE_PATH}`);
+    const content = decodeURIComponent(atob(result.content));
+    data = JSON.parse(content);
+    items = data.items || [];
+    window._fileSha = result.sha;
+    return true;
+  } catch (e) {
+    if (e.message.includes('Not Found')) {
+      data = { version: 1, items: [], lastModified: new Date().toISOString() };
+      items = [];
+      window._fileSha = null;
+      return true;
+    }
+    throw e;
+  }
+}
+
+async function saveToGitHub() {
+  data.lastModified = new Date().toISOString();
+  const content = btoa(unescape(encodeURIComponent(JSON.stringify(data, null, 2))));
+  const body = {
+    message: `更新提醒事项 (${new Date().toLocaleString('zh-CN')})`,
+    content,
+    branch: BRANCH,
+  };
+  if (window._fileSha) body.sha = window._fileSha;
+  const result = await githubFetch('PUT', `/repos/${OWNER}/${REPO}/contents/${FILE_PATH}`, body);
+  window._fileSha = result.content.sha;
+}
+
+// ====== 业务 ======
+function isDueOnDate(item, dateStr) {
+  if (item.done) return false;
+  const due = item.due_date;
+  const recur = item.recur || '';
+  if (!due) return true;
+  if (due === dateStr) return true;
+  if ((recur === 'daily' || recur === 'everyday') && dateStr >= due) return true;
+  if (recur === 'weekday') {
+    const wd = new Date(dateStr + 'T00:00:00').getDay();
+    return wd >= 1 && wd <= 5 && dateStr >= due;
+  }
+  if (recur === 'weekly') {
+    const dw = new Date(due + 'T00:00:00').getDay();
+    const tw = new Date(dateStr + 'T00:00:00').getDay();
+    return dw === tw && dateStr >= due;
+  }
+  return false;
+}
+
+function getFiltered() {
+  let dateStr = currentFilter === 'today' ? todayStr()
+    : currentFilter === 'tomorrow' ? tomorrowStr()
+    : currentFilter === 'all' ? null : currentFilter;
+  let filtered = dateStr ? items.filter(it => isDueOnDate(it, dateStr)) : [...items];
+  filtered.sort((a, b) => {
+    if (a.done !== b.done) return a.done ? 1 : -1;
+    if (!a.due_date && b.due_date) return -1;
+    if (a.due_date && !b.due_date) return 1;
+    if (a.due_date && b.due_date && a.due_date !== b.due_date) return a.due_date < b.due_date ? -1 : 1;
+    return a.id - b.id;
+  });
+  return filtered;
+}
+
+function render() {
+  const filtered = getFiltered();
+  const list = document.getElementById('itemList');
+  const stats = document.getElementById('stats');
+  const done = filtered.filter(it => it.done).length;
+  const pending = filtered.length - done;
+  const label = currentFilter === 'today' ? fmtDate(todayStr())
+    : currentFilter === 'tomorrow' ? fmtDate(tomorrowStr())
+    : currentFilter === 'all' ? '全部事项' : fmtDate(currentFilter);
+  stats.textContent = `${label} · ${filtered.length}项，待办${pending}项`;
+  if (filtered.length === 0) {
+    list.innerHTML = '<div class="empty"><div class="icon">📭</div><div>暂无事项</div></div>';
+    return;
+  }
+  list.innerHTML = filtered.map(item => {
+    const tags = [];
+    if (item.recur) {
+      const ls = { daily: '每天', weekday: '工作日', weekly: '每周' };
+      tags.push(`<span class="tag-recur">🔁 ${ls[item.recur]}</span>`);
+    }
+    if (item.due_date && !item.done && item.due_date < todayStr()) tags.push(`<span class="tag-overdue">⚠️ 逾期</span>`);
+    if (item.due_date === todayStr() && !item.done) tags.push(`<span class="tag-today">今天</span>`);
+    return `<li class="item-card ${item.done ? 'done' : ''}" onclick="toggleDone(${item.id})">
+      <div class="checkbox">${item.done ? '✓' : ''}</div>
+      <div class="item-body">
+        <div class="item-content">${esc(item.content)}</div>
+        ${item.due_date ? `<div class="item-meta"><span>${fmtDate(item.due_date)}</span></div>` : ''}
+        ${tags.length ? `<div class="item-meta">${tags.join('')}</div>` : ''}
+      </div>
+      <button class="item-delete" onclick="event.stopPropagation(); deleteItem(${item.id})">✕</button>
+    </li>`;
+  }).join('');
+}
+
+function esc(t) { const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
+
+function setDate(val) {
+  currentFilter = val;
+  document.querySelectorAll('.quick-btn').forEach(b => b.classList.remove('active'));
+  const btn = document.querySelector(`.quick-btn[data-date="${val}"]`);
+  if (btn) btn.classList.add('active');
+  document.getElementById('datePicker').value = val === 'today' ? todayStr() : val === 'tomorrow' ? tomorrowStr() : '';
+  render();
+}
+
+function onDateChange() {
+  setDate(document.getElementById('datePicker').value || 'all');
+}
+
+function toggleAddForm() {
+  const form = document.getElementById('addForm');
+  form.classList.toggle('open');
+  if (form.classList.contains('open')) {
+    document.getElementById('newContent').value = '';
+    document.getElementById('newDate').value = currentFilter === 'all' ? todayStr() : currentFilter === 'today' ? todayStr() : currentFilter === 'tomorrow' ? tomorrowStr() : currentFilter;
+    document.getElementById('newRecur').value = '';
+    document.getElementById('newContent').focus();
+  }
+}
+
+async function addItem() {
+  const content = document.getElementById('newContent').value.trim();
+  if (!content) { showToast('请输入内容'); return; }
+  const item = {
+    id: items.reduce((max, it) => Math.max(max, it.id), 0) + 1,
+    content,
+    due_date: document.getElementById('newDate').value || null,
+    recur: document.getElementById('newRecur').value || null,
+    done: false,
+    created_at: new Date().toISOString()
+  };
+  items.push(item);
+  try {
+    await saveToGitHub();
+    render();
+    toggleAddForm();
+    showToast('✅ 已添加');
+  } catch(e) {
+    items = items.filter(it => it.id !== item.id);
+    showToast('❌ 保存失败: ' + e.message);
+    if (e.message === 'NO_TOKEN' || e.message.includes('Bad credentials')) showTokenBar();
+  }
+}
+
+async function toggleDone(id) {
+  const item = items.find(it => it.id === id);
+  if (!item) return;
+  item.done = !item.done;
+  try {
+    await saveToGitHub();
+    render();
+  } catch(e) {
+    item.done = !item.done;
+    showToast('❌ 保存失败: ' + e.message);
+    if (e.message.includes('Bad credentials')) showTokenBar();
+  }
+}
+
+async function deleteItem(id) {
+  if (!confirm('确定删除？')) return;
+  const removed = items.find(it => it.id === id);
+  items = items.filter(it => it.id !== id);
+  try {
+    await saveToGitHub();
+    render();
+    showToast('🗑️ 已删除');
+  } catch(e) {
+    items.push(removed);
+    showToast('❌ 删除失败: ' + e.message);
+  }
+}
+
+async function refreshData() {
+  const token = getToken();
+  if (!token) { showTokenBar(); return; }
+  try {
+    await loadFromGitHub();
+    render();
+    showToast('⟳ 已刷新');
+  } catch(e) {
+    showToast('❌ 加载失败: ' + e.message);
+    if (e.message === 'NO_TOKEN' || e.message.includes('Bad credentials')) showTokenBar();
+  }
+}
+
+function showTokenBar() {
+  document.getElementById('tokenBar').classList.add('show');
+}
+
+let toastTimer;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2000);
+}
+
+async function init() {
+  const token = getToken();
+  if (!token) {
+    showTokenBar();
+    return;
+  }
+  document.getElementById('datePicker').value = todayStr();
+  try {
+    await loadFromGitHub();
+    setDate('today');
+  } catch(e) {
+    showToast('❌ 加载失败: ' + e.message);
+    if (e.message.includes('Bad credentials')) {
+      localStorage.removeItem('gh_token');
+      showTokenBar();
+    }
+  }
+}
+
+init();
+</script>
+</body>
+</html>
