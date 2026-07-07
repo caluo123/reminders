@@ -38,9 +38,9 @@
       "content": "å·¥ä½æ¥ç»ç¸å¦æçµè¯",
       "due_date": "2026-07-07",
       "recur": "weekday",
-      "done": false,
+      "done": true,
       "created_at": "2026-07-07T01:39:31.451Z"
     }
   ],
-  "lastModified": "2026-07-07T02:03:59.846Z"
+  "lastModified": "2026-07-07T02:04:01.605Z"
 }
