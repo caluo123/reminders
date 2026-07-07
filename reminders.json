@@ -30,7 +30,7 @@
       "content": "æ¯æ¥ç»ç´",
       "due_date": "2026-07-07",
       "recur": "daily",
-      "done": false,
+      "done": true,
       "created_at": "2026-07-07T01:39:31.391Z"
     },
     {
@@ -42,5 +42,5 @@
       "created_at": "2026-07-07T01:39:31.451Z"
     }
   ],
-  "lastModified": "2026-07-07T02:03:58.108Z"
+  "lastModified": "2026-07-07T02:03:59.846Z"
 }
